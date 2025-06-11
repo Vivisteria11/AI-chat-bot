@@ -123,23 +123,31 @@ import { Send } from "lucide-react";
 
 export default function Home() {
   const [history, setHistory] = useState([]);
-  const firstMessage = "Hi there! I'm the Headstarter virtual assistant. How can I help you today?"
-  
+  const firstMessage = "Hi there! I'm the Headstarter virtual assistant. How can I help you today?";
   const [message, setMessage] = useState("");
 
   const sendMessage = async () => {
-    setHistory((history) => [ ...history, { role: "user", parts: [{ text: message }] } ]);
+    // Append user's message to history
+    const newHistory = [...history, { role: "user", parts: [{ text: message }] }];
+    setHistory(newHistory);
     setMessage("");
 
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([ ...history, { role: "user", parts: [{ text: message }] } ])
-    });
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newHistory)
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    setHistory((history) => [ ...history, { role: "model", parts: [{ text: data }] } ]);
+      setHistory((history) => [
+        ...history,
+        { role: "model", parts: [{ text: data.text }] }
+      ]);
+    } catch (err) {
+      console.error("Failed to fetch response:", err);
+    }
   };
 
   return (
@@ -155,13 +163,13 @@ export default function Home() {
       <Stack 
         direction={'column'} 
         justifyContent={'flex-end'}
-        width={'70%'}  // Increased width
+        width={'70%'}
         height={'100%'} 
         border={'2px solid black'} 
         borderRadius={5}
         p={2}
         spacing={3}
-        bgcolor="white" // Background for chat container
+        bgcolor="white"
       >
         {/* Message display area */}
         <Stack 
@@ -173,15 +181,12 @@ export default function Home() {
           padding={1}
         >
           {/* Initial Assistant Message */}
-          <Box 
-            display="flex"
-            justifyContent={'flex-start'}
-          >
+          <Box display="flex" justifyContent={'flex-start'}>
             <Box 
               bgcolor={'secondary.light'}
               borderRadius={10}
               p={2}
-              maxWidth="70%" // Limit width of message
+              maxWidth="70%"
             >
               <Typography color={'white'}>
                 {firstMessage}
@@ -194,23 +199,23 @@ export default function Home() {
             <Box
               key={index}
               display={'flex'}
-              justifyContent={textObject.role === 'user' ? 'flex-end' : 'flex-start'} // Align based on role
+              justifyContent={textObject.role === 'user' ? 'flex-end' : 'flex-start'}
             >
               <Box
                 bgcolor={textObject.role === 'user' ? 'primary.main' : 'secondary.light'}
                 borderRadius={16}
                 p={2}
-                maxWidth="70%" // Limit message width
+                maxWidth="70%"
                 color="white"
               >
-                {textObject.parts[0].text}
+                {textObject.parts[0]?.text}
               </Box>
             </Box>
           ))}
         </Stack>
 
         {/* Message input and send button */}
-        <Stack direction={'row'} spacing={2} >
+        <Stack direction={'row'} spacing={2}>
           <TextField 
             label='Message' 
             fullWidth 
